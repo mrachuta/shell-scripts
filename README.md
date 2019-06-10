@@ -1,32 +1,33 @@
 ## Project name
-this is not a project - this is a library of bash scripts
+
+this is not a project - this is a library of bash scripts.
+Each of scripts was written due to private needs/requirements.
 
 ## Table of contents
+
 * [General info](#general-info)
 * [gdirvemounter](#gdrivemounter)
 * [vpsconfigurator](#vpsconfigurator)
 
 ## General info
+
 Each of the scripts is used to realize another task.
 Scripts was written due to personally requirements.
 You can use it, modify and do everything that you want.
 
 
 ## gdrivemounter
-Python 3.
-File was compilled to executable using pyInstaller.
 
-Code was tested on following platforms:
+Script was prepared to be used together with google-drive-ocalmfuse
+package. Because gdo has no service-agent, script can be easily adapted
+as base for service daemon. It can be also used as separate script, to
+manually mount and umount multiple (or single) drives.
 
-a) Windows 8.1 (PL-PL) (x64) with Python 3.7.1  
-b) Windows 8.1 (EN-US) (x64) with Python 3.6.4
-c) Windows 7 (PL-PL) (x64) with Python 3.7.1
-
-Used libraries:
-DOPISAĆ i ZROBIĆ PLIK Z REQUIREMENTS
+For more info check source.
 
 ## vpsconfigurator
 
-1. Clone git repo to localhost,
-2. Install required packages (optional, if you want to use pyresizer as Python script)
+Script is used to automate initial configuration of VPS.
+It creates the new user, set password and install necessary software.
+Still in development to exclude as much as possible manually typing.
   

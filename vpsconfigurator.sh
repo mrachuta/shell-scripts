@@ -49,5 +49,4 @@ echo "- traceroute"
 sudo apt-get install traceroute
 
 echo "Configuration completed"
-return 0
 
