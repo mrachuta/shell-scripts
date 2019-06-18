@@ -45,56 +45,56 @@ function newuser {
 
 function confssh {
 	
-echo "Configuring SSH service..."
+	echo "Configuring SSH service..."
 
-# List of params can be modified
-sshparams=(PasswordAuthentication=yes PermitRootLogin=no)
+	# List of params can be modified
+	sshparams=(PasswordAuthentication=yes PermitRootLogin=no)
 
-# Do not change!
-sshparamslen=${#sshparams[@]}
+	# Do not change!
+	sshparamslen=${#sshparams[@]}
 
-# Standard path to config
-conff="/etc/ssh/sshd_config"
+	# Standard path to config
+	conff="/etc/ssh/sshd_config"
 
-for e in $(seq 0 $[sshparamslen-1])
-do
-	par=${sshparams[$e]}
-	
-	# Convert to array
-	IFS="=" read -r -a i <<< "${par}"
-	
-	repto="## Changed by vpsconfigurator ##\n${i[0]} ${i[1]}"
-	if [ "${i[1]}" == "yes" ]
-	then
-		search=$(sed -n -e "/^${i[0]}[ ]*no$/p" $conff)
-	else
-		search=$(sed -n -e "/^${i[0]}[ ]*yes$/p" $conff)
-	fi
-	
-	if [ "$search" ]
-	then
-		echo "Setting ${i[0]}=${i[1]}"
+	for e in $(seq 0 $[sshparamslen-1])
+	do
+		par=${sshparams[$e]}
+		
+		# Convert to array
+		IFS="=" read -r -a i <<< "${par}"
+		
+		repto="## Changed by vpsconfigurator ##\n${i[0]} ${i[1]}"
 		if [ "${i[1]}" == "yes" ]
 		then
-			sed -i -e "s/^${i[0]}[ ]*no$/## Manually ##\n${i[0]} ${i[1]}/g" $conff
+			search=$(sed -n -e "/^${i[0]}[ ]*no$/p" $conff)
 		else
-			sed -i -e "s/^${i[0]}[ ]*yes$/## Manually ##\n${i[0]} ${i[1]}/g" $conff
+			search=$(sed -n -e "/^${i[0]}[ ]*yes$/p" $conff)
 		fi
+		
+		if [ "$search" ]
+		then
+			echo "Setting ${i[0]}=${i[1]}"
+			if [ "${i[1]}" == "yes" ]
+			then
+				sed -i -e "s/^${i[0]}[ ]*no$/## Manually ##\n${i[0]} ${i[1]}/g" $conff
+			else
+				sed -i -e "s/^${i[0]}[ ]*yes$/## Manually ##\n${i[0]} ${i[1]}/g" $conff
+			fi
+		else
+			echo "${i[0]}=${i[1]} already presented, not overrided"
+		fi
+	done
+
+	echo "Restarting SSH service"
+	sudo service ssh restart
+
+	if [ "$?" != 0 ]
+	then
+		echo \
+		"WARNING: service SSH not restarted properly, check it manually!"
 	else
-		echo "${i[0]}=${i[1]} already presented, not overrided"
+		echo "Service SSH restarted properly"
 	fi
-done
-
-echo "Restarting SSH service"
-sudo service ssh restart
-
-if [ "$?" != 0 ]
-then
-	echo \
-	"WARNING: service SSH not restarted properly, check it manually!"
-else
-	echo "Service SSH restarted properly"
-fi
 
 }
 
