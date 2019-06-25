@@ -30,16 +30,21 @@ function newuser {
 					"Password for user $newusername will stay unchanged"
 					;;
 			esac
-			read -p \ 
-			"Do you want to add your key to authorized_keys [y/n] " \
+			read -p \
+			"Do you want to add your key to authorized_keys? [y/n] " \
 			addkey
 			case $addkey in
 				y)
 					read -p "Enter url to key: " keyurl
-					wget -O - $keyurl >> $HOME/.ssh/authorized_keys
+					if [ ! -d "/home/$newusername/.ssh/" ]
+					then
+						mkdir /home/$newusername/.ssh/
+					fi
+					wget -O - $keyurl >> /home/$newusername/.ssh/authorized_keys
 					if [ "$?" = 0 ]
 					then
 						echo "Key added"
+						chown $newusername:$newusername /home/$newusername/.ssh/authorized_keys
 					else
 						echo "Failed to add key"
 					fi
