@@ -16,11 +16,12 @@ function newuser {
 	function newuserpasskey {
 	
 		read -p \
-		"Do you want to add/change password for $newusername? [y/n] " \
+		"Do you want to add/change password for user $newusername? [y/n] " \
 		changepassword
 		case $changepassword in
 			y)
 				passwd $newusername
+				echo "Password for user $newusername was changed"
 				;;
 			*)
 				echo \
@@ -28,7 +29,7 @@ function newuser {
 				;;
 		esac
 		read -p \
-		"Do you want to add your key to authorized_keys? [y/n] " \
+		"Do you want to add your key to authorized_keys for user $newusername? [y/n] " \
 		addkey
 		case $addkey in
 			y)
@@ -42,17 +43,30 @@ function newuser {
 				wget -O - $keyurl >> /home/$newusername/.ssh/authorized_keys
 				if [ "$?" = 0 ]
 				then
-					echo "Key added"
+					echo "Key added for $newusername"
 					chown $newusername:$newusername /home/$newusername/.ssh/authorized_keys
 				else
-					echo "Failed to add key"
+					echo "Failed to add key for user $newusername"
 				fi
 				;;
 			*)
-				echo "Key will be not added"
+				echo "Key will be not added for user $newusername"
 				;;
 		esac
-	
+		read -p \
+		"Do you want to set sudo for user $newusername passwordless? [y/n] " \
+		passwordless
+		case $passwordless in
+			y)
+				echo -e "# Added by vpsconfigurator\n" >> /etc/sudoers
+				echo -e "$newusername ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+				echo "Sudo will be passwordless for user $newusername"
+				;;
+			*)
+				echo "Sudo will be password-protected for user $newusername"
+				;;
+		esac
+		
 	}
 
 	case $(grep -c "^$newusername:" /etc/passwd) in
