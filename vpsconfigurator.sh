@@ -12,52 +12,58 @@ function newuser {
 	
 	echo "Enter username for your new user:"
 	read newusername
-
-	echo "Creating new user $newusername"
+	
+	function newuserpasskey {
+	
+		read -p \
+		"Do you want to add/change password for $newusername? [y/n] " \
+		changepassword
+		case $changepassword in
+			y)
+				passwd $newusername
+				;;
+			*)
+				echo \
+				"Password for user $newusername will stay unchanged"
+				;;
+		esac
+		read -p \
+		"Do you want to add your key to authorized_keys? [y/n] " \
+		addkey
+		case $addkey in
+			y)
+				read -p "Enter url to key: " keyurl
+				if [ ! -d "/home/$newusername/.ssh/" ]
+				then
+					mkdir /home/$newusername/.ssh/
+				fi
+				
+				# Option "-q" can be added to wget to completely hide an output
+				wget -O - $keyurl >> /home/$newusername/.ssh/authorized_keys
+				if [ "$?" = 0 ]
+				then
+					echo "Key added"
+					chown $newusername:$newusername /home/$newusername/.ssh/authorized_keys
+				else
+					echo "Failed to add key"
+				fi
+				;;
+			*)
+				echo "Key will be not added"
+				;;
+		esac
+	
+	}
 
 	case $(grep -c "^$newusername:" /etc/passwd) in
 		1)
-			echo "User already exists, skipping..."
-			read -p \
-			"Do you want to change password for $newusername? [y/n] " \
-			changepassword
-			case $changepassword in
-				y)
-					passwd $newusername
-					;;
-				*)
-					echo \
-					"Password for user $newusername will stay unchanged"
-					;;
-			esac
-			read -p \
-			"Do you want to add your key to authorized_keys? [y/n] " \
-			addkey
-			case $addkey in
-				y)
-					read -p "Enter url to key: " keyurl
-					if [ ! -d "/home/$newusername/.ssh/" ]
-					then
-						mkdir /home/$newusername/.ssh/
-					fi
-					wget -O - $keyurl >> /home/$newusername/.ssh/authorized_keys
-					if [ "$?" = 0 ]
-					then
-						echo "Key added"
-						chown $newusername:$newusername /home/$newusername/.ssh/authorized_keys
-					else
-						echo "Failed to add key"
-					fi
-					;;
-				*)
-					echo "Key will be not added"
-					;;
-			esac
+			echo "User $newusername already exists, skipping..."
+			newuserpasskey
 			;;
 		0)
-			useradd $newusername
-			echo "Type password for new user $newusername:"
-			passwd $newusername
+			echo "Creating new user $newusername"
+			useradd -m -s $(which bash) $newusername
+			newuserpasskey
 			;;
 	esac
 
