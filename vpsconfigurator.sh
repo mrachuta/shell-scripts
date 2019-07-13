@@ -99,7 +99,7 @@ function confssh {
 	# Standard path to config
 	conff="/etc/ssh/sshd_config"
 
-	for e in $(seq 0 $[sshparamslen-1])
+	ffor e in $(seq 0 $[sshparamslen-1])
 	do
 		par=${sshparams[$e]}
 		
@@ -119,9 +119,9 @@ function confssh {
 			echo "Setting ${i[0]}=${i[1]}"
 			if [ "${i[1]}" == "yes" ]
 			then
-				sed -i -e "s/^${i[0]}[ ]*no$/## Manually ##\n${i[0]} ${i[1]}/g" $conff
+				sed -i -e "s/^${i[0]}[ ]*no$/$repto/g" $conff
 			else
-				sed -i -e "s/^${i[0]}[ ]*yes$/## Manually ##\n${i[0]} ${i[1]}/g" $conff
+				sed -i -e "s/^${i[0]}[ ]*yes$/$repto/g" $conff
 			fi
 		else
 			echo "${i[0]}=${i[1]} already presented, not overrided"
