@@ -1,40 +1,43 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Script mounts multiple google-drives.
-# First, install google-drive-ocamlfuse package:
+# Script mounts multiple google-drives
+# Install google-drive-ocamlfuse package:
 # https://github.com/astrada/google-drive-ocamlfuse
 # Usage: add username(s) to 'accounts' array: e.g. ("jon" "jon2")
-# Run script manually to login to each account (as your user)
-# Add script to autostart/systemd/initd to keep drives available 
-# each login.
+# Run script manually to login to each account
+# Add script to autostart to keep drives available each login
 
-accounts=("typeyourusernamehere")
+accounts=(
+	"rah6061"
+	"rah60611"
+	"rah606111"
+	)
 
-# If you use script as systemd service, you need to
-# add path to google-drive-ocamlfuse manually.
+# If you use script as systemd service, you ned to
+# add path to google-drive-ocamlfuse manually
 
 #gdo=$(whereis google-drive-ocamlfuse | cut -d" " -f2-)
-gdo="/path/to/google-drive-ocamlfuse"
+gdo="/home/mati/.opam/default/bin/google-drive-ocamlfuse"
 
-function checkconnection {
+check_connection() {
 	
-	maxtries=3
-	currtry=1
-	while [ $maxtries -gt 0 ]
+	max_try=3
+	curr_try=1
+	while [ $max_try -gt 0 ]
 	do
 		
-		echo "Checking internet connection, try $currtry"
-		wget -q --spider http://google.com
+		echo "Checking internet connection, try $curr_try"
+		wget -q --spider https://google.com
 
 		if [ $? -eq 0 ] 
 		then
 			echo "Online, drives will be mounted"
-			export ISCONNECTED=true
+			export GDRIVEMOUNTER_NET_CONNECTION=true
 			return 0
 		else
 			echo "Offline"
-			let maxtries=maxtries-1
-			let currtry=currtry+1
+			let max_try=max_try-1
+			let curr_try=curr_try+1
 			sleep 60
 		fi
 	done
@@ -43,7 +46,7 @@ function checkconnection {
 	return 1
 }
 
-function umountdrives {
+umount_drives() {
 	
 	for i in ${!accounts[*]}
 	do
@@ -55,10 +58,10 @@ function umountdrives {
 	
 }
 
-function mountdrives {
+mount_drives() {
 	
-	checkconnection
-	if [ "$ISCONNECTED" == "true" ]
+	check_connection
+	if [ "$GDRIVEMOUNTER_NET_CONNECTION" == "true" ]
 	then
 		for i in ${!accounts[*]}
 		do
@@ -73,26 +76,40 @@ function mountdrives {
 
 }
 
-function displayhelp {
+display_help() {
 	
 	echo "Script mounts multiple google-drives"
-	echo "for more information see source."
+	echo "google-drive-ocamlfuse must be installed"
+	echo "for more information see sourcel"
 	echo ""
-	echo "Use -m to mount drives"
-	echo "Use -u to umount drives"
-	echo "Use -h to display this help"
+	echo "Use -m or --mount to mount drives"
+	echo "Use -u or --umount to umount drives"
+	echo "Use -h or --help to display this help"
 
 }
 
+
+if [ ! "$(which google-drive-ocamlfuse)" ]
+then
+	echo "Install google-drive-ocamlfuse first!"
+	exit 1
+fi
+
 case "$1" in
-	"") mountdrives
+	"") 
+	mount_drives
 	;;
-	"-m") mountdrives
+	-m|--mount) 
+	mount_drives
 	;;
-	"-u") umountdrives
+	-u|--umount) 
+	umount_drives
 	;;
-	"-h") displayhelp
+	-h|--help) 
+	display_help
 	;;
-	*) echo "Unknown option, type -h for help"
+	*) 
+	echo "Unknown option, type -h for help"
+	;;
 esac
 	

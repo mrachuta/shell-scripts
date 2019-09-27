@@ -1,179 +1,231 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Script configure remote VPS (basic confiuguration)
+# Script configure remote VPS (basic configuration)
 
-hostname=$(hostname)
-kernel=$(uname -r)
-currusername=$(whoami)
+HOSTNAME=$(hostname)
+KERNEL=$(uname -r)
+CURR_USER=$(whoami)
 
-function newuser {
+add_user() {
 	
-	echo "Configuring user..."
+	echo "Configuring an user..."
 	
-	echo "Enter username for your new user:"
-	read newusername
+	echo "Enter username of your new or existing user: "
+	read new_user
 	
-	function newuserpasskey {
+	_pass_key() {
 	
 		read -p \
-		"Do you want to add/change password for user $newusername? [y/n] " \
-		changepassword
-		case $changepassword in
-			y)
-				passwd $newusername
-				echo "Password for user $newusername was changed"
+		"Do you want to add/change password for user $new_user? [y/n] " \
+		change_pass
+		case $change_pass in
+			y|Y)
+				passwd $new_user
+				echo "Password for user $new_user was changed"
 				;;
 			*)
 				echo \
-				"Password for user $newusername will stay unchanged"
+				"Password for user $new_user will stay unchanged"
 				;;
 		esac
 		read -p \
-		"Do you want to add your key to authorized_keys for user $newusername? [y/n] " \
-		addkey
-		case $addkey in
-			y)
-				read -p "Enter url to key: " keyurl
-				if [ ! -d "/home/$newusername/.ssh/" ]
+		"Do you want to add new ssh key to authorized_keys for user $new_user? [y/n] " \
+		add_key
+		case $add_key in
+			y|Y)
+				read -p "Enter url to key: " key_url
+				if [ ! -d "/home/$new_user/.ssh/" ]
 				then
-					mkdir /home/$newusername/.ssh/
+					mkdir /home/$new_user/.ssh/
 				fi
-				
+        
 				# Option "-q" can be added to wget to completely hide an output
-				wget -O - $keyurl >> /home/$newusername/.ssh/authorized_keys
+				wget -O - $key_url >> /home/$new_user/.ssh/authorized_keys
 				if [ "$?" = 0 ]
 				then
-					echo "Key added for $newusername"
-					chown $newusername:$newusername /home/$newusername/.ssh/authorized_keys
+					echo "Key added for $new_user"
+					chown $new_user:$new_user /home/$new_user/.ssh/authorized_keys
 				else
-					echo "Failed to add key for user $newusername"
+					echo "Failed to add key for user $new_user"
 				fi
 				;;
 			*)
-				echo "Key will be not added for user $newusername"
+				echo "Key will be not added for user $new_user"
 				;;
 		esac
+    echo "Adding user $new_user to sudoers..."
+    sudo adduser $new_user sudo
 		read -p \
-		"Do you want to set sudo for user $newusername passwordless? [y/n] " \
-		passwordless
-		case $passwordless in
-			y)
-				echo -e "# Added by vpsconfigurator\n" >> /etc/sudoers
-				echo -e "$newusername ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-				echo "Sudo will be passwordless for user $newusername"
+		"Do you want to set sudo for user $new_user passwordless? [y/n] " \
+		passwordless_sudo
+		case $passwordless_sudo in
+			y|Y)
+				echo -e "## Added by vpsconfigurator ##\n" >> /etc/sudoers
+				echo -e "$new_user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+				echo "Sudo will be passwordless for user $new_user"
 				;;
 			*)
-				echo "Sudo will be password-protected for user $newusername"
+				echo "Sudo will be password-protected for user $new_user"
 				;;
 		esac
 		
 	}
 
-	case $(grep -c "^$newusername:" /etc/passwd) in
+	case $(grep -c "^$new_user:" /etc/passwd) in
 		1)
-			echo "User $newusername already exists, skipping..."
-			newuserpasskey
+			echo "User $new_user already exists, skipping..."
+			_pass_key
 			;;
 		0)
-			echo "Creating new user $newusername"
-			useradd -m -s $(which bash) $newusername
-			newuserpasskey
+			echo "Creating new user $new_user"
+			useradd -m -s $(which bash) $new_user
+			_pass_key
 			;;
 	esac
 
-	echo "Adding user $newusername to sudo"
-	sudo adduser $newusername sudo
-
 }
 
-function confssh {
+configure_ssh() {
 	
 	echo "Configuring SSH service..."
 
 	# List of params can be modified
-	sshparams=(PasswordAuthentication=yes PermitRootLogin=no)
-
+	# source: https://medium.com/@jasonrigden/hardening-ssh-1bcb99cd4cef
+	
+	ssh_params=(
+		"PasswordAuthentication=yes"
+		"PermitRootLogin=no"
+		"X11Forwarding=no"
+		"IgnoreRhosts=yes"
+		"UseDNS=yes"
+		"PermitEmptyPasswords=no"
+		"MaxAuthTries=3"
+		"Protocol=2"
+		"LogLevel=VERBOSE"
+		"UsePrivilegeSeparation=sandbox"
+		"KexAlgorithms=curve25519-sha256@libssh.org"
+		"Ciphers=chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr"
+		"MACs=hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com"
+		"HostKey=\\/etc\\/ssh\\/ssh_host_ed25519_key"
+		"HostKey=\\/etc\\/ssh\\/ssh_host_rsa_key"
+	)
+	
 	# Do not change!
-	sshparamslen=${#sshparams[@]}
+	ssh_params_len=${#ssh_params[@]}
 
 	# Standard path to config
-	conff="/etc/ssh/sshd_config"
+	conf_file="/etc/ssh/sshd_config"
+	
+	echo "Backup of file is available in $conf_file.bak"
+	cp $conf_file $conf_file.bak
 
-	ffor e in $(seq 0 $[sshparamslen-1])
+	for e in $(seq 0 $[ssh_params_len-1])
 	do
-		par=${sshparams[$e]}
+		param=${ssh_params[$e]}
 		
 		# Convert to array
-		IFS="=" read -r -a i <<< "${par}"
+		IFS="=" read -r -a i <<< "${param}"
 		
-		repto="## Changed by vpsconfigurator ##\n${i[0]} ${i[1]}"
-		if [ "${i[1]}" == "yes" ]
+		# Single lines allow to multiline
+		new_value="## Changed by vpsconfigurator ##\n${i[0]} ${i[1]}"
+		
+		case_a="${i[0]}[ ]${i[1]}$"
+		case_b="#${i[0]}[ ]${i[1]}$"
+		case_c="#*${i[0]}[ ].*$"
+		
+		echo "Setting ${i[0]} param..."
+		if [[ $(sed -n -e "/^$case_a/p" $conf_file) ]]
 		then
-			search=$(sed -n -e "/^${i[0]}[ ]*no$/p" $conff)
+		  echo "${i[0]}=${i[1]} already presented, not overrided"
+		elif [[ $(sed -n -e "/^$case_b/p" $conf_file) ]]
+		then
+		  sed -i -e "s/^$case_b/$new_value/" $conf_file
+		  echo "Changed to: ${i[0]}=${i[1]}"	
+		elif [[ $(sed -n -e "/^$case_c/p" $conf_file) ]]
+		then
+		  sed -i -e "s/^$case_c/$new_value/" $conf_file
+		  echo "Changed to: ${i[0]}=${i[1]}"		
 		else
-			search=$(sed -n -e "/^${i[0]}[ ]*yes$/p" $conff)
+		  # Parameter -e allow to escape newline character
+		  echo -e "## Added by vpsconfigurator ##\n${i[0]} ${i[1]}" \
+		  >> $conf_file
+		  echo "${i[0]}=${i[1]} not presented, added"
 		fi
 		
-		if [ "$search" ]
-		then
-			echo "Setting ${i[0]}=${i[1]}"
-			if [ "${i[1]}" == "yes" ]
-			then
-				sed -i -e "s/^${i[0]}[ ]*no$/$repto/g" $conff
-			else
-				sed -i -e "s/^${i[0]}[ ]*yes$/$repto/g" $conff
-			fi
-		else
-			echo "${i[0]}=${i[1]} already presented, not overrided"
-		fi
 	done
+	
+	read -p \
+	"Do you want to rebuild moduli? This can take some time [y/n] " \
+	rebuild_moduli
+	
+	case $rebuild_moduli in
+	
+		y|Y)
+			echo "Rebuiliding moduli..."
+			ssh-keygen -G moduli-2048.candidates -b 2048
+			ssh-keygen -T moduli-2048 -f moduli-2048.candidates
+			cp moduli-2048 /etc/ssh/moduli
+			rm moduli-2048
+			echo "Moduli rebuilded"
+			;;
+		*)
+			echo "Moduli will be not rebuild"
+			;;
+			
+	esac
+		
 
-	echo "Restarting SSH service"
+	echo "Restarting SSH service..."
 	sudo service ssh restart
 
 	if [ "$?" != 0 ]
 	then
 		echo \
-		"WARNING: service SSH not restarted properly, check it manually!"
+		"WARNING: service SSH not restarted properly, restart it manually!"
 	else
 		echo "Service SSH restarted properly"
 	fi
 
 }
 
-function software {
+install_soft() {
 	
 	echo "Configuring software..."
 	
 	# List of apps to be installed can be modified
-	applist=(nano htop iputils-ping traceroute)
+	app_list=(
+		"nano"
+		"htop"
+		"iputils-ping"
+		"traceroute"
+		)
 	
 	# Do not change!
-	applistlen=${#applist[@]}
+	app_list_len=${#app_list[@]}
 	
-	echo "Performing package manager update"
+	echo "Performing package manager update..."
 	sudo apt-get update
-	echo "Performing system update"
+	echo "Performing system update..."
 	sudo apt-get dist-upgrade
-	echo "Installing software"
+	echo "Installing software..."
 	
-	for i in $(seq 0 $[applist-1])
+	for i in $(seq 0 $[app_list_len-1])
 	do
-		echo "- ${applist[$i]}"
-		sudo apt-get install ${applist[$i]}
+		echo "- ${app_list[$i]}"
+		sudo apt-get install ${app_list[$i]}
 	done
-	
+
 }	
 
 echo "Host configuration script for Debian-based systems"
-echo "Configuring $hostname on $kernel"
+echo "Configuring $HOSTNAME on $KERNEL"
 
-if [ "$currusername" != "root" ]
+if [ "$CURR_USER" != "root" ]
 then
 	read -p "Did you already set root password? [y/n] " \
-	changerootpassword
-	case $changerootpassword in
-		n)
+	change_root_pass
+	case $change_root_pass in
+		n|N)
 			sudo passwd
 			
 			# Re-run script as root
@@ -195,8 +247,8 @@ fi
 
 # Execute main functions 
 
-newuser
-confssh
-software
+add_user
+configure_ssh
+install_soft
 
 echo "Configuration completed"
