@@ -16,19 +16,15 @@ accounts=(
 # If you use script as systemd service, you ned to
 # add path to google-drive-ocamlfuse manually
 
-#gdo=$(whereis google-drive-ocamlfuse | cut -d" " -f2-)
-gdo="/home/mati/.opam/default/bin/google-drive-ocamlfuse"
-
 check_connection() {
 	
 	max_try=3
 	curr_try=1
+  
 	while [ $max_try -gt 0 ]
 	do
-		
 		echo "Checking internet connection, try $curr_try"
 		wget -q --spider https://google.com
-
 		if [ $? -eq 0 ] 
 		then
 			echo "Online, drives will be mounted"
@@ -41,33 +37,37 @@ check_connection() {
 			sleep 60
 		fi
 	done
+  
 	echo "Offline, unable to mount drives"
 	xmessage -buttons Ok:0 -center -default Ok "Offline, unable to mount drives" -timeout 10
+  
 	return 1
 }
 
-umount_drives() {
+unmount_drives() {
 	
 	for i in ${!accounts[*]}
 	do
-		echo "Umounting drive related to account: ${accounts[$i]}"
+		echo "Unmounting drive related to account: ${accounts[$i]}"
 		fusermount -u /media/${accounts[$i]}
 		sleep 5
 	done
-	echo "All drives umounted"
+  
+	echo "All drives unmounted"
 	
 }
 
 mount_drives() {
 	
 	check_connection
+  
 	if [ "$GDRIVEMOUNTER_NET_CONNECTION" == "true" ]
 	then
 		for i in ${!accounts[*]}
 		do
 			echo "Mounting drive related to account: ${accounts[$i]}"
 			sleep 15
-			$gdo -label ${accounts[$i]} /media/${accounts[$i]}
+			google-drive-ocamlfuse -label ${accounts[$i]} /media/${accounts[$i]}
 		done
 		echo "All google-drives mounted"
 		xmessage -buttons Ok:0 -center -default Ok "All google-drives mounted" -timeout 10
@@ -83,7 +83,7 @@ display_help() {
 	echo "for more information see sourcel"
 	echo ""
 	echo "Use -m or --mount to mount drives"
-	echo "Use -u or --umount to umount drives"
+	echo "Use -u or --unmount to unmount drives"
 	echo "Use -h or --help to display this help"
 
 }
@@ -91,8 +91,8 @@ display_help() {
 
 if [ ! "$(which google-drive-ocamlfuse)" ]
 then
-	echo "Install google-drive-ocamlfuse first!"
-	exit 1
+  echo "Install google-drive-ocamlfuse first!"
+ 	exit 1
 fi
 
 case "$1" in
@@ -102,8 +102,8 @@ case "$1" in
 	-m|--mount) 
 	mount_drives
 	;;
-	-u|--umount) 
-	umount_drives
+	-u|--unmount) 
+	unmount_drives
 	;;
 	-h|--help) 
 	display_help
