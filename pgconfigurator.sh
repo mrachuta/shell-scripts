@@ -22,7 +22,7 @@ for host in $(seq 0 $[list_len-1])
 do
   # Sed another delimiter
   # https://stackoverflow.com/a/20808365/9342492
-  
+
   if ! [[ $(sed -n -e "\~^host $POSTGRES_DB $POSTGRES_USER ${ALLOWED_HOSTS[host]} md5~p" $POSTGRES_HBA) ]]
   then
     echo -e "## Changed by PGConfigurator\nhost $POSTGRES_DB $POSTGRES_USER ${ALLOWED_HOSTS[host]} md5" >> $POSTGRES_HBA
@@ -73,20 +73,20 @@ pg_params=(
   "log_statement='ddl'"
   "log_timezone='localtime'"
 )
-	
+
 # Do not change!
 pg_params_len=${#pg_params[@]}
 
 for x in $(seq 0 $[pg_params_len-1])
 do
   param=${pg_params[$x]}
-  
+
   # Convert to array
   IFS="=" read -r -a i <<< "${param}"
-  
+
   searched_value="#*${i[0]}[[:blank:]]=[[:blank:]][[[:print:]][^#]\{0,\}"
   new_value="## Changed by PGConfigurator\n${i[0]} = ${i[1]}"
-  
+
   echo "Setting ${i[0]} param..."
     if [[ $(sed -n -e "\~^${i[0]}[[:blank:]]=[[:blank:]]${i[1]}~p" $POSTGRES_CONF) ]]
     then

@@ -34,7 +34,10 @@ Still in development to exclude as much as possible manually typing.
 ## pgconfigurator
 
 Script used to configure contenerized postgresql database.
-To use script, mount it under /docker-entrypoint-initdb.d/pgconfigurator.sh with
-read/write permissions.
+To use script, mount it under: 
+  
+/docker-entrypoint-initdb.d/pgconfigurator.sh 
+  
+with read/write permissions.
 It will be executed automatically, when container will be created.
 
