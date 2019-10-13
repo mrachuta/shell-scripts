@@ -37,10 +37,6 @@ if ! [[ $(sed -n -e "/^host all all all reject/p" $POSTGRES_HBA) ]]
     echo -e "## Changed by PGConfigurator\nhost all all all reject" >> $POSTGRES_HBA
 fi
 
-#echo "Creating  postgresql folder for logs..."
-#mkdir -p /var/log/postgresql
-#chown -R postgres:postgres /var/log/postgresql
-
 echo ""
 echo "Applying custom postgres.conf..."
 echo "Making backup..."
@@ -88,7 +84,6 @@ do
   # Convert to array
   IFS="=" read -r -a i <<< "${param}"
   
-  # Single lines allow to multiline
   searched_value="#*${i[0]}[[:blank:]]=[[:blank:]][[[:print:]][^#]\{0,\}"
   new_value="## Changed by PGConfigurator\n${i[0]} = ${i[1]}"
   
