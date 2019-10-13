@@ -106,15 +106,15 @@ configure_ssh() {
 		"KexAlgorithms=curve25519-sha256@libssh.org"
 		"Ciphers=chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr"
 		"MACs=hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com"
-		"HostKey=\\/etc\\/ssh\\/ssh_host_ed25519_key"
-		"HostKey=\\/etc\\/ssh\\/ssh_host_rsa_key"
+		"HostKey=/etc/ssh/ssh_host_ed25519_key"
+		"HostKey=/etc/ssh/ssh_host_rsa_key"
 	)
 	
 	# Do not change!
 	ssh_params_len=${#ssh_params[@]}
 
 	# Standard path to config
-	conf_file="/etc/ssh/sshd_config"
+	conf_file=/etc/ssh/sshd_config
 	
 	echo "Backup of file is available in $conf_file.bak"
 	cp $conf_file $conf_file.bak
@@ -127,27 +127,34 @@ configure_ssh() {
 		IFS="=" read -r -a i <<< "${param}"
 		
 		# Single lines allow to multiline
-		new_value="## Changed by vpsconfigurator ##\n${i[0]} ${i[1]}"
+		new_value="## Changed by VPSConfigurator\n${i[0]} ${i[1]}"
 		
-		case_a="${i[0]}[ ]${i[1]}$"
-		case_b="#${i[0]}[ ]${i[1]}$"
-		case_c="#*${i[0]}[ ].*$"
+    # Case if param already exists
+		case_a="${i[0]}[[:blank:]]${i[1]}$"
+    # Case for enabling two params with the same name but
+    # another argument, (if param exists with required argument
+    # uncomment them
+		case_b="#${i[0]}[[:blank:]]${i[1]}$"
+    # If param is commented and/or has another argument
+		case_c="#*${i[0]}[[:blank:]].*$"
 		
+    # Custom delimiters added
+    # https://unix.stackexchange.com/a/211838
 		echo "Setting ${i[0]} param..."
-		if [[ $(sed -n -e "/^$case_a/p" $conf_file) ]]
+		if [[ $(sed -n -e "\~^$case_a~p" $conf_file) ]]
 		then
 		  echo "${i[0]}=${i[1]} already presented, not overrided"
-		elif [[ $(sed -n -e "/^$case_b/p" $conf_file) ]]
+		elif [[ $(sed -n -e "\~^$case_b~p" $conf_file) ]]
 		then
-		  sed -i -e "s/^$case_b/$new_value/" $conf_file
+		  sed -i -e "s~^$case_b~$new_value~" $conf_file
 		  echo "Changed to: ${i[0]}=${i[1]}"	
-		elif [[ $(sed -n -e "/^$case_c/p" $conf_file) ]]
+		elif [[ $(sed -n -e "\~^$case_c~p" $conf_file) ]]
 		then
-		  sed -i -e "s/^$case_c/$new_value/" $conf_file
+		  sed -i -e "s~^$case_c~$new_value~" $conf_file
 		  echo "Changed to: ${i[0]}=${i[1]}"		
 		else
 		  # Parameter -e allow to escape newline character
-		  echo -e "## Added by vpsconfigurator ##\n${i[0]} ${i[1]}" \
+		  echo -e "## Added by VPSConfigurator\n${i[0]} ${i[1]}" \
 		  >> $conf_file
 		  echo "${i[0]}=${i[1]} not presented, added"
 		fi
@@ -174,7 +181,6 @@ configure_ssh() {
 			
 	esac
 		
-
 	echo "Restarting SSH service..."
 	sudo service ssh restart
 
@@ -217,7 +223,9 @@ install_soft() {
 
 }	
 
-echo "Host configuration script for Debian-based systems"
+echo "= VPSConfigurator ="
+echo "Script performs basic system configuration for Debian"
+echo "and Debian-based distros"
 echo "Configuring $HOSTNAME on $KERNEL"
 
 if [ "$CURR_USER" != "root" ]

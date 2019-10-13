@@ -15,7 +15,6 @@ Each of the scripts is used to realize another task.
 Scripts was written due to personally requirements.
 You can use it, modify and do everything that you want.
 
-
 ## gdrivemounter
 
 Script was prepared to be used together with google-drive-ocalmfuse
@@ -30,4 +29,11 @@ For more info check source.
 Script is used to automate initial configuration of VPS.
 It creates the new user, set password and install necessary software.
 Still in development to exclude as much as possible manually typing.
-  
+ 
+## pgconfigurator
+
+Script used to configure contenerized postgresql database.
+To use script, mount it under /docker-entrypoint-initdb.d/pgconfigurator.sh with
+read/write permissions.
+It will be executed automatically, when container will be created.
+
