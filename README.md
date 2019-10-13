@@ -8,6 +8,7 @@ Each of scripts was written due to private needs/requirements.
 * [General info](#general-info)
 * [gdirvemounter](#gdrivemounter)
 * [vpsconfigurator](#vpsconfigurator)
+* [pgconfigurator](#pgconfigurator)
 
 ## General info
 
