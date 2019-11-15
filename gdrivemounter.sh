@@ -8,24 +8,21 @@
 # Add script to autostart to keep drives available each login
 
 accounts=(
-  "rah6061"
-  "rah60611"
-  "rah606111"
+  "test1"
+  "test11"
+  "test111"
 )
-
-# If you use script as systemd service, you ned to
-# add path to google-drive-ocamlfuse manually
 
 check_connection() {
 
   max_try=3
   curr_try=1
 
-  while [ $max_try -gt 0 ]
+  while [[ $max_try -gt 0 ]]
   do
     echo "Checking internet connection, try $curr_try"
     wget -q --spider https://google.com
-    if [ $? -eq 0 ]
+    if [[ $? -eq 0 ]]
     then
       echo "Online, drives will be mounted"
       export GDRIVEMOUNTER_NET_CONNECTION=true
@@ -61,7 +58,7 @@ mount_drives() {
 
   check_connection
 
-  if [ "$GDRIVEMOUNTER_NET_CONNECTION" == "true" ]
+  if [[ "$GDRIVEMOUNTER_NET_CONNECTION" == "true" ]]
   then
     for i in ${!accounts[*]}
     do
@@ -88,8 +85,7 @@ display_help() {
 
 }
 
-
-if [ ! "$(which google-drive-ocamlfuse)" ]
+if [[ ! "$(which google-drive-ocamlfuse)" ]]
 then
   echo "Install google-drive-ocamlfuse first!"
   exit 1
@@ -112,4 +108,3 @@ case "$1" in
   echo "Unknown option, type -h for help"
   ;;
 esac
-

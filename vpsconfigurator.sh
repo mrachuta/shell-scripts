@@ -2,8 +2,8 @@
 
 # Script configure remote VPS (basic configuration)
 
-HOSTNAME=$(hostname)
-KERNEL=$(uname -r)
+CURR_HOSTNAME=$(hostname)
+CURR_KERNEL=$(uname -r)
 CURR_USER=$(whoami)
 
 add_user() {
@@ -12,6 +12,7 @@ add_user() {
 
   echo "Enter username of your new or existing user: "
   read new_user
+  export NEW_USER=$new_user
 
   _pass_key() {
 
@@ -34,14 +35,14 @@ add_user() {
     case $add_key in
       y|Y)
         read -p "Enter url to key: " key_url
-        if [ ! -d "/home/$new_user/.ssh/" ]
+        if [[ ! -d "/home/$new_user/.ssh/" ]]
         then
-          mkdir /home/$new_user/.ssh/
+          mkdir /home/${new_user}/.ssh/
         fi
 
         # Option "-q" can be added to wget to completely hide an output
         wget -O - $key_url >> /home/$new_user/.ssh/authorized_keys
-        if [ "$?" = 0 ]
+        if [[ "$?" = 0 ]]
         then
           echo "Key added for $new_user"
           chown $new_user:$new_user /home/$new_user/.ssh/authorized_keys
@@ -184,7 +185,7 @@ configure_ssh() {
   echo "Restarting SSH service..."
   sudo service ssh restart
 
-  if [ "$?" != 0 ]
+  if [[ "$?" != 0 ]]
   then
     echo \
     "WARNING: service SSH not restarted properly, restart it manually!"
@@ -204,6 +205,8 @@ install_soft() {
     "htop"
     "iputils-ping"
     "traceroute"
+    "screen"
+    "xdotool"
     )
 
   # Do not change!
@@ -223,12 +226,73 @@ install_soft() {
 
 }
 
+add_aliases() {
+
+  transfersh_code=(
+    "# Custom function for transfer.sh support"
+    "function transfer() {"
+    "  url='https://transfer.sh/';"
+    "  if [[ '\$1' ]] && [[ '\$2' ]];"
+    "  then"
+    "    echo 'Uploading file \$1 with download-limit set to \$2';"
+    "    curl -H 'Max-Days: 1' -H 'Max-Downloads: \$2' --upload-file \$1 \$url\$1;"
+    "    echo -e '\nUploading finished!';"
+    "  elif [[ '\$1' ]];"
+    "  then"
+    "    echo 'Uploading file \$1...';"
+    "    curl -H 'Max-Days: 1' --upload-file \$1 \$url\$1;"
+    "    echo -e '\nUploading finished!';"
+    "  else"
+    "    echo 'No arguments were specified!';"
+    "    echo 'Usage: transfer <filepath> (required arg) <maxdown> (optional arg)';"
+    "  fi;"
+    "}"
+    "# end of custom function for transfer.sh support"
+  )
+
+  # Do not change!
+  transfersh_code_len=${#transfersh_code[@]}
+
+  for i in $(seq 0 $[transfersh_code_len-1])
+  do
+    echo "${transfersh_code[$i]}" >> /home/$NEW_USER/.bash_aliases
+  done
+
+
+  aliases_list=(
+    'alias l="ls -all --block-size=k"'
+    'alias s="screen -ls"'
+    'alias 1="screen -R .screen1"'
+    'alias 2="screen -R .screen2"'
+    'alias 3="screen -R .screen3"'
+    'alias 4="screen -R .screen4"'
+    'alias sd="xdotool key ctrl+a+d"'
+    'alias snano="sudo nano"'
+    'alias svim="sudo vim"'
+    'alias cd ...="cd ../.."'
+    'alias ...="cd ../.."'
+    'alias ..="cd .."'
+  )
+
+  # Do not change!
+  aliases_list_len=${#aliases_list[@]}
+
+  # Remove default alias for 'l'
+  sed -i -e "s~^alias l='ls -CF'$~#alias l='ls -CF'~" /home/$NEW_USER/.bashrc
+
+  for i in $(seq 0 $[aliases_list_len-1])
+  do
+    echo "${aliases_list[$i]}" >> /home/$NEW_USER/.bash_aliases
+  done
+
+}
+
 echo "= VPSConfigurator ="
 echo "Script performs basic system configuration for Debian"
 echo "and Debian-based distros"
-echo "Configuring $HOSTNAME on $KERNEL"
+echo "Configuring $CURR_HOSTNAME on $CURR_KERNEL"
 
-if [ "$CURR_USER" != "root" ]
+if [[ "$CURR_USER" != "root" ]]
 then
   read -p "Did you already set root password? [y/n] " \
   change_root_pass
@@ -258,5 +322,9 @@ fi
 add_user
 configure_ssh
 install_soft
+add_aliases
+
+# Remove variables from environment
+unset NEW_USER CURR_HOSTNAME CURR_KERNEL CURR_USER
 
 echo "Configuration completed"
