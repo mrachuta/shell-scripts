@@ -6,6 +6,37 @@ CURR_HOSTNAME=$(hostname)
 CURR_KERNEL=$(uname -r)
 CURR_USER=$(whoami)
 
+install_soft() {
+
+  echo "Configuring software..."
+
+  # List of apps to be installed can be modified
+  app_list=(
+    "nano"
+    "htop"
+    "iputils-ping"
+    "traceroute"
+    "screen"
+    "xdotool"
+    )
+
+  # Do not change!
+  app_list_len=${#app_list[@]}
+
+  echo "Performing package manager update..."
+  sudo apt-get update
+  echo "Performing system update..."
+  sudo apt-get dist-upgrade
+  echo "Installing software..."
+
+  for i in $(seq 0 $[app_list_len-1])
+  do
+    echo "- ${app_list[$i]}"
+    sudo apt-get install ${app_list[$i]}
+  done
+
+}
+
 add_user() {
 
   echo "Configuring an user..."
@@ -94,7 +125,7 @@ configure_ssh() {
   # source: https://medium.com/@jasonrigden/hardening-ssh-1bcb99cd4cef
 
   ssh_params=(
-    "PasswordAuthentication=yes"
+    "PasswordAuthentication=no"
     "PermitRootLogin=no"
     "X11Forwarding=no"
     "IgnoreRhosts=yes"
@@ -195,37 +226,6 @@ configure_ssh() {
 
 }
 
-install_soft() {
-
-  echo "Configuring software..."
-
-  # List of apps to be installed can be modified
-  app_list=(
-    "nano"
-    "htop"
-    "iputils-ping"
-    "traceroute"
-    "screen"
-    "xdotool"
-    )
-
-  # Do not change!
-  app_list_len=${#app_list[@]}
-
-  echo "Performing package manager update..."
-  sudo apt-get update
-  echo "Performing system update..."
-  sudo apt-get dist-upgrade
-  echo "Installing software..."
-
-  for i in $(seq 0 $[app_list_len-1])
-  do
-    echo "- ${app_list[$i]}"
-    sudo apt-get install ${app_list[$i]}
-  done
-
-}
-
 add_aliases() {
 
   transfersh_code=(
@@ -260,7 +260,9 @@ add_aliases() {
 
 
   aliases_list=(
-    'alias l="ls -all --block-size=k"'
+    'alias la="ls -all --block-size=k"'
+    'alias l="ls --block-size=k"'
+    'alias ls="ls --block-size=k"'
     'alias s="screen -ls"'
     'alias 1="screen -R .screen1"'
     'alias 2="screen -R .screen2"'
@@ -272,14 +274,21 @@ add_aliases() {
     'alias cd ...="cd ../.."'
     'alias ...="cd ../.."'
     'alias ..="cd .."'
+    'alias shutdown="shutdown -h now"'
+    'alias sshutdown="sudo shutdown -h now"'
+    'alias reboot="shutdown -r now"'
+    'alias sreboot="sudo shutdown -r now"'
   )
 
   # Do not change!
   aliases_list_len=${#aliases_list[@]}
 
-  # Remove default alias for 'l'
-  sed -i -e "s~^alias l='ls -CF'$~#alias l='ls -CF'~" /home/$NEW_USER/.bashrc
+  # Remove default aliases
+  sed -i -e "s~^alias l=~#alias l=~" /home/$NEW_USER/.bashrc
+  sed -i -e "s~^alias la=~#alias la=~" /home/$NEW_USER/.bashrc
+  sed -i -e "s~^alias ls=~#alias ls=~" /home/$NEW_USER/.bashrc
 
+  # Add aliases from defined list
   for i in $(seq 0 $[aliases_list_len-1])
   do
     echo "${aliases_list[$i]}" >> /home/$NEW_USER/.bash_aliases
@@ -319,9 +328,9 @@ fi
 
 # Execute main functions
 
+install_soft
 add_user
 configure_ssh
-install_soft
 add_aliases
 
 # Remove variables from environment

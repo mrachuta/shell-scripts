@@ -10,6 +10,7 @@ Each of scripts was written due to private needs/requirements.
 * [vpsconfigurator](#vpsconfigurator)
 * [pgconfigurator](#pgconfigurator)
 * [watchdocker](#watchdocker)
+* [getcert](#getcert)
 
 ## General info
 
@@ -22,18 +23,21 @@ You can use it, modify and do everything that you want.
 Script was prepared to be used together with google-drive-ocalmfuse
 package. Because gdo has no service-agent, script can be easily adapted
 as base for service daemon. It can be also used as separate script, to
-manually mount and umount multiple (or single) drives.
+manually mount and unmount multiple (or single) drives.
 
 ## vpsconfigurator
 
 Script is used to automate initial configuration of VPS.
 It creates the new user, set password and install necessary software.
-Still in development to exclude as much as possible manually typing.
+Still in development to exclude as much as possible manually typing.  
+
+TODO:  
+a) add support for CentOS
 
 ## pgconfigurator
 
-Script used to configure contenerized postgresql database.
-To use script, mount it under: */docker-entrypoint-initdb.d/pgconfigurator.sh* with read/write permissions.
+Script used to configure containerized postgresql database.
+To use script, mount it under: */docker-entrypoint-initdb.d/pgconfigurator.sh*.
 It will be executed automatically, when container will be created.
 
 ## watchdocker
@@ -41,4 +45,15 @@ It will be executed automatically, when container will be created.
 Script checking for available container-image updates.
 If there is no updated image available, update via apt
 on base system inside container is performed.
-Can be adapted as service-daemon via cron.
+Can be adapted as service-daemon via cron.  
+
+TODO:  
+a) manage in-container pip updates
+
+## getcert
+
+Script for getting an new certificate/renewing
+an old certificate, using Let's Encrypt as
+certificate supplier. It is prepared for containerized environment with docker-compose.yml file.
+Works only with nginx. Can be adapted as service-daemon via cron.  
+Based on https://github.com/wmnnd/nginx-certbot
