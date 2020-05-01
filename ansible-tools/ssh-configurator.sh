@@ -143,7 +143,7 @@ main() {
 
     usage
 
-    if [ -n "$1" ]; then
+    if [[ -n "$1" ]]; then
       change_ssh_params
     else
       exit 1
