@@ -1,22 +1,30 @@
 ## Project name
 
-This is not a project - this is a library of bash scripts.
-Each of scripts was written due to private needs/requirements.
+This is not a project - this is a library of shell scripts.
+Each script was written because of private needs/requirements.
 
 ## Table of contents
 
-* [General info](#general-info)
-* [gdirvemounter](#gdrivemounter)
-* [vpsconfigurator](#vpsconfigurator)
-* [pgconfigurator](#pgconfigurator)
-* [watchdocker](#watchdocker)
-* [getcert](#getcert)
+- [Project name](#project-name)
+- [Table of contents](#table-of-contents)
+- [General info](#general-info)
+- [Ansible tools](#ansible-tools)
+- [gdrivemounter](#gdrivemounter)
+- [vpsconfigurator](#vpsconfigurator)
+- [pgconfigurator](#pgconfigurator)
+- [watchdocker](#watchdocker)
+- [getcert](#getcert)
 
 ## General info
 
-Each of the scripts is used to realize another task.
+Each script is used to realize another task.
 Scripts was written due to personally requirements.
 You can use it, modify and do everything that you want.
+
+## Ansible tools
+
+Collection of shell scripts used in Ansible tasks.
+For more details check this repository: https://github.com/mrachuta/ansible-playbooks
 
 ## gdrivemounter
 
@@ -30,9 +38,6 @@ manually mount and unmount multiple (or single) drives.
 Script is used to automate initial configuration of VPS.
 It creates the new user, set password and install necessary software.
 Still in development to exclude as much as possible manually typing.  
-
-TODO:  
-a) add support for CentOS
 
 ## pgconfigurator
 

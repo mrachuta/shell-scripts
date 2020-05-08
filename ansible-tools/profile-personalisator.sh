@@ -3,6 +3,7 @@
 PACKAGE_URL=https://github.com/mrachuta/dev-null/raw/master/profile-files.tar
 arch_name=$(echo $PACKAGE_URL | rev | cut -d'/' -f 1 | rev)
 folder_name=$(echo "$arch_name" | rev | cut -d'.' -f 2 | rev)
+curr_datetime=$(date +%Y-%m-%d-%H_%M_%S)
 
 get_package() {
 
@@ -17,21 +18,38 @@ get_package() {
 
 configure_bashrc() {
 
-  echo "Copying bashrc"
+  echo "bashrc configuration..."
+  echo "Backup of .bashrc available in /home/$1/bashrc-$curr_datetime"
 
+  cp "/home/$1/.bashrc" "/home/$1/bashrc-$curr_datetime.bak"
+  echo "Chosing random color for machine-name background..."
+  # Last color in table is 256, but after 229 there are
+  # gray/black/white colours 
+  # https://misc.flogisoft.com/bash/tip_colors_and_formatting
+  color_code=$(( RANDOM % 229 ))
+  echo "$color_code"
+  searched_val="D_MACHINE_COLOR=\"\\\e\[30;48;5;[[:digit:]]{1,3}m\""
+  new_val="D_MACHINE_COLOR=\"\\\e\[30;48;5;${color_code}m\""
+  sed -i -r "s~^$searched_val~$new_val~" "/tmp/$folder_name/.bashrc"
+  chmod 644 "/home/$1/bashrc-$curr_datetime.bak"
+  chown "$1":"$1" "/home/$1/bashrc-$curr_datetime.bak"
   cp "/tmp/$folder_name/.bashrc" "/home/$1/.bashrc"
+  chmod 644 "/home/$1/.bashrc"
+  chown "$1":"$1" "/home/$1/.bashrc"
 
-  echo "bashrc copied!"
+  echo "bashrc configuration finished!"
 
 }
 
 configure_bash_aliases() {
-
-  echo "Copying bash_aliases..."
+  
+  echo "bash_aliases configuration..."
 
   cp "/tmp/$folder_name/.bash_aliases" "/home/$1/.bash_aliases"
+  chmod 644 "/home/$1/.bash_aliases"
+  chown "$1":"$1" "/home/$1/.bash_aliases"
 
-  echo "bash_aliases copied!"
+  echo "bash_aliases configuration finished"
 }
 
 configure_vim() {
@@ -53,6 +71,8 @@ configure_vim() {
   echo "Configuring vim..."
 
   cp "/tmp/$folder_name/.vimrc" "/home/$1/.vimrc"
+  chmod 644 "/home/$1/.vimrc"
+  chown "$1":"$1" "/home/$1/.vimrc"
 
   # Install pathogen
   mkdir -p "/home/$1/.vim/autoload" "/home/$1/.vim/bundle" "/home/$1/.vim/colors"
@@ -76,7 +96,9 @@ configure_vim() {
     cd "/home/$1/.vim/bundle" && git clone "${plugin_list[$i]}"
   done
 
-  echo "Configuration of vim finished!"
+  chown -R "$1":"$1" "/home/$1/.vim"
+
+  echo "Vim configuration finished!"
 }
 
 usage() {

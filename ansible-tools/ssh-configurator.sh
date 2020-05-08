@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 
+# Arguments description
 
-# $1- user list(required)
-# for single user pass: user1
-# for more than one user pass: user1,user2,user3
+# $1: user list (required)
+# For single user, pass: user1
+# For more than one user, pass: user1,user2,user3
 
-# $2 - rebuild moduli (optional)
-# if yes, pass: -m
+# $2 - ssh service port (required)
+# Pass port number. If should stay as default, pass: 22
 
-# $3 - restart service (optional)
-# if yes, pass -r
+# $3 - rebuild moduli (optional)
+# Pass: -m
+
+# $4 - restart service (optional)
+# Pass: -r
 
 # List of params can be modified
 # source: https://medium.com/@jasonrigden/hardening-ssh-1bcb99cd4cef
 
 ssh_params=(
-    "Port=28828"
+    "Port=$2"
     "PasswordAuthentication=no"
     "PermitRootLogin=no"
     "X11Forwarding=no"
@@ -55,18 +59,16 @@ change_ssh_params() {
     param=${ssh_params[$e]}
 
     # Convert to array
-    IFS="=" read -r -a i <<<"${param}"
+    IFS="=" read -r -a i <<< "${param}"
 
     # Single lines allow to multiline
     new_value="## Changed by ssh-configurator.sh\n${i[0]} ${i[1]}"
 
-    # Case if param already exists
+    # If parameter already exists
     case_a="${i[0]}[[:blank:]]${i[1]}$"
-    # Case for enabling two params with the same name but
-    # another argument, (if param exists with required argument
-    # uncomment them
+    # If parameter exists, but is commented
     case_b="#${i[0]}[[:blank:]]${i[1]}$"
-    # If param is commented and/or has another argument
+    # If parameter is commented and/or has another argument
     case_c="#*${i[0]}[[:blank:]].*$"
 
     # Custom delimiters added
@@ -75,15 +77,14 @@ change_ssh_params() {
     if [[ $(sed -n -e "\~^$case_a~p" $conf_file) ]]; then
       echo "${i[0]}=${i[1]} already presented, not overrided"
     elif [[ $(sed -n -e "\~^$case_b~p" $conf_file) ]]; then
-      sed -i -e "s~^$case_b~$new_value~" $conf_file
+      sed -i -e "s~^$case_b~$new_value~" "$conf_file"
       echo "Changed to: ${i[0]}=${i[1]}"
     elif [[ $(sed -n -e "\~^$case_c~p" $conf_file) ]]; then
-      sed -i -e "s~^$case_c~$new_value~" $conf_file
+      sed -i -e "s~^$case_c~$new_value~" "$conf_file"
       echo "Changed to: ${i[0]}=${i[1]}"
     else
       # Parameter -e allow to escape newline character
-      echo -e "## Added by ssh-configurator.sh\n${i[0]} ${i[1]}" \
-        >>$conf_file
+      echo -e "## Added by ssh-configurator.sh\n${i[0]} ${i[1]}" >> "$conf_file"
       echo "${i[0]}=${i[1]} not presented, added"
     fi
 
@@ -97,7 +98,7 @@ rebuild_moduli() {
 
     echo "Rebuiliding moduli..."
     # Check version of ssh-keygen and use proper command
-    if ssh-keygen --help 2>&1 >/dev/null | grep 'M'; then
+    if ssh-keygen --help 2>&1 > /dev/null | grep 'M'; then
       echo "New version of ssh-keygen available"
       ssh-keygen -M generate -O bits=2048 moduli-2048.candidates
       ssh-keygen -M screen -f moduli-2048.candidates moduli-2048
@@ -115,11 +116,11 @@ rebuild_moduli() {
 restart_ssh_service() {
 
     echo "Restarting SSH service..."
-    sudo service ssh restart
+    sudo systemctl restart sshd
 
     if [[ $? != 0 ]]; then
-        echo \
-        "WARNING: service SSH not restarted properly, restart it manually!"
+        echo "WARNING: service SSH not restarted properly, restart it manually!"
+        echo "WARNING: If ssh service will be unavailable, use rescue console!"
         exit 1
     else
         echo "Service SSH restarted properly!"
@@ -129,11 +130,13 @@ restart_ssh_service() {
 
 usage() {
 
-    echo -e "Script perform changes in SSH service\n"
+    echo -e "Script for customization & hardening SSH service\n"
     echo "Use as root!"
-    echo "Usage: ssh-configurator.sh user [-m] [-r]"
+    echo "Usage: ssh-configurator.sh user port [-m] [-r]"
     echo "Replace 'user' with your username (allow to login via SSH)"
     echo "You can also pass list of users, for example: user1,user2,user3"
+    echo "Replace 'port' with new port for SSH daemon"
+    echo "if you want to left default, pass following value: 22"
     echo "-m - rebuild moduli (optional)"
     echo "-r - restart service (optional)"
     
@@ -143,13 +146,13 @@ main() {
 
     usage
 
-    if [[ -n "$1" ]]; then
+    if [[ -n "$1" ]] || [[ -n "$2" ]]; then
       change_ssh_params
     else
       exit 1
     fi
 
-    case $2 in
+    case $3 in
     -m)
       rebuild_moduli
       ;;
@@ -162,7 +165,7 @@ main() {
       ;;
     esac
 
-    case $3 in
+    case $4 in
     -m)
       rebuild_moduli
       ;;
@@ -177,4 +180,4 @@ main() {
 }
 
 # Pass arguments to function
-main "$1" "$2" "$3"
+main "$1" "$2" "$3" "$4"

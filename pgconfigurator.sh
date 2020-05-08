@@ -13,34 +13,31 @@ echo "Script performs basic service configuration for PostgreSQL"
 echo ""
 echo "Applying changes to pg_hba.conf..."
 echo "Making backup..."
-cp $POSTGRES_HBA $POSTGRES_HBA.bak
+cp "$POSTGRES_HBA" "$POSTGRES_HBA.bak"
 
-sed -i -e "s/^host all all all \(md5\|trust\)$//g" $POSTGRES_HBA
+sed -i -e "s/^host all all all \(md5\|trust\)$//g" "$POSTGRES_HBA"
 
 list_len=${#ALLOWED_HOSTS[@]}
-for host in $(seq 0 $[list_len-1])
-do
+for host in $(seq 0 $((list_len - 1))); do
   # Sed another delimiter
   # https://stackoverflow.com/a/20808365/9342492
 
-  if ! [[ $(sed -n -e "\~^host $POSTGRES_DB $POSTGRES_USER ${ALLOWED_HOSTS[host]} md5~p" $POSTGRES_HBA) ]]
-  then
-    echo -e "## Changed by PGConfigurator\nhost $POSTGRES_DB $POSTGRES_USER ${ALLOWED_HOSTS[host]} md5" >> $POSTGRES_HBA
+  if ! [[ $(sed -n -e "\~^host $POSTGRES_DB $POSTGRES_USER ${ALLOWED_HOSTS[host]} md5~p" "$POSTGRES_HBA") ]]; then
+    echo -e "## Changed by PGConfigurator\nhost $POSTGRES_DB $POSTGRES_USER ${ALLOWED_HOSTS[host]} md5" >> "$POSTGRES_HBA"
     echo "Host ${ALLOWED_HOSTS[host]} added to pg_hba.conf"
   else
     echo "Host ${ALLOWED_HOSTS[host]} already presented in pg_hba.conf"
   fi
 done
 
-if ! [[ $(sed -n -e "/^host all all all reject/p" $POSTGRES_HBA) ]]
-  then
-    echo -e "## Changed by PGConfigurator\nhost all all all reject" >> $POSTGRES_HBA
+if ! [[ $(sed -n -e "/^host all all all reject/p" "$POSTGRES_HBA") ]]; then
+  echo -e "## Changed by PGConfigurator\nhost all all all reject" >> "$POSTGRES_HBA"
 fi
 
 echo ""
 echo "Applying custom postgres.conf..."
 echo "Making backup..."
-cp $POSTGRES_CONF $POSTGRES_CONF.bak
+cp "$POSTGRES_CONF" "$POSTGRES_CONF.bak"
 echo "Setting params..."
 echo ""
 
@@ -77,10 +74,8 @@ pg_params=(
 # Do not change!
 pg_params_len=${#pg_params[@]}
 
-for x in $(seq 0 $[pg_params_len-1])
-do
+for x in $(seq 0 $((pg_params_len - 1))); do
   param=${pg_params[$x]}
-
   # Convert to array
   IFS="=" read -r -a i <<< "${param}"
 
@@ -88,18 +83,16 @@ do
   new_value="## Changed by PGConfigurator\n${i[0]} = ${i[1]}"
 
   echo "Setting ${i[0]} param..."
-    if [[ $(sed -n -e "\~^${i[0]}[[:blank:]]=[[:blank:]]${i[1]}~p" $POSTGRES_CONF) ]]
-    then
-      echo "${i[0]} = ${i[1]} already presented, not overrided"
-    elif [[ $(sed -n -e "\~^$searched_value~p" $POSTGRES_CONF) ]]
-    then
-      sed -i -e "s~^$searched_value~$new_value ~" $POSTGRES_CONF
-      echo "Changed to: ${i[0]} = ${i[1]}"
-    else
-      # Parameter -e allow to escape newline character
-      echo -e "## Added by PGConfigurator\n${i[0]} = ${i[1]}" >> $POSTGRES_CONF
-      echo "${i[0]} = ${i[1]} not presented, added"
-    fi
+  if [[ $(sed -n -e "\~^${i[0]}[[:blank:]]=[[:blank:]]${i[1]}~p" "$POSTGRES_CONF") ]]; then
+    echo "${i[0]} = ${i[1]} already presented, not overrided"
+  elif [[ $(sed -n -e "\~^$searched_value~p" "$POSTGRES_CONF") ]]; then
+    sed -i -e "s~^$searched_value~$new_value ~" "$POSTGRES_CONF"
+    echo "Changed to: ${i[0]} = ${i[1]}"
+  else
+    # Parameter -e allow to escape newline character
+    echo -e "## Added by PGConfigurator\n${i[0]} = ${i[1]}" >> "$POSTGRES_CONF"
+    echo "${i[0]} = ${i[1]} not presented, added"
+  fi
 done
 
 echo ""

@@ -18,12 +18,10 @@ check_connection() {
   max_try=3
   curr_try=1
 
-  while [[ $max_try -gt 0 ]]
-  do
+  while [[ $max_try -gt 0 ]]; do
     echo "Checking internet connection, try $curr_try"
     wget -q --spider https://google.com
-    if [[ $? -eq 0 ]]
-    then
+    if [[ $? -eq 0 ]]; then
       echo "Online, drives will be mounted"
       export GDRIVEMOUNTER_NET_CONNECTION=true
       return 0
@@ -43,10 +41,9 @@ check_connection() {
 
 unmount_drives() {
 
-  for i in ${!accounts[*]}
-  do
+  for i in ${!accounts[*]}; do
     echo "Unmounting drive related to account: ${accounts[$i]}"
-    fusermount -u /media/${accounts[$i]}
+    fusermount -u "/media/${accounts[$i]}"
     sleep 5
   done
 
@@ -58,13 +55,11 @@ mount_drives() {
 
   check_connection
 
-  if [[ "$GDRIVEMOUNTER_NET_CONNECTION" == "true" ]]
-  then
-    for i in ${!accounts[*]}
-    do
+  if [[ "$GDRIVEMOUNTER_NET_CONNECTION" == "true" ]]; then
+    for i in ${!accounts[*]}; do
       echo "Mounting drive related to account: ${accounts[$i]}"
       sleep 15
-      google-drive-ocamlfuse -label ${accounts[$i]} /media/${accounts[$i]}
+      google-drive-ocamlfuse -label "${accounts[$i]}" "/media/${accounts[$i]}"
     done
     echo "All google-drives mounted"
     xmessage -buttons Ok:0 -center -default Ok "All google-drives mounted" -timeout 10
@@ -85,26 +80,25 @@ display_help() {
 
 }
 
-if [[ ! "$(which google-drive-ocamlfuse)" ]]
-then
+if [[ ! "$(command -v google-drive-ocamlfuse)" ]]; then
   echo "Install google-drive-ocamlfuse first!"
   exit 1
 fi
 
 case "$1" in
-  "")
+"")
   mount_drives
   ;;
-  -m|--mount)
+-m | --mount)
   mount_drives
   ;;
-  -u|--unmount)
+-u | --unmount)
   unmount_drives
   ;;
-  -h|--help)
+-h | --help)
   display_help
   ;;
-  *)
+*)
   echo "Unknown option, type -h for help"
   ;;
 esac

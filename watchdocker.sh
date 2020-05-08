@@ -92,7 +92,7 @@ update () {
         echo "Deleting old-latest-stable version of $container_img_name image"
         sudo docker image rm $container_latest_stable_img_id
       fi
-      wite_log \
+      write_log \
       "Container $container_name - image was updated, container rebuild using new image"
     else
       echo "Unknown status"
