@@ -24,7 +24,7 @@ configure_bashrc() {
   cp "/home/$1/.bashrc" "/home/$1/bashrc-$curr_datetime.bak"
   echo "Chosing random color for machine-name background..."
   # Last color in table is 256, but after 229 there are
-  # gray/black/white colours 
+  # gray/black/white colors 
   # https://misc.flogisoft.com/bash/tip_colors_and_formatting
   color_code=$(( RANDOM % 229 ))
   echo "$color_code"

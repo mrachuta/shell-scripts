@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Uncomment line below for debugging
+#set -x
+
 # Script for getting an new certificate/renewing
 # an old certificate, using Let's Encrypt as
 # certificate supplier.
@@ -25,10 +28,12 @@ rsa_key_size=4096
 cfg_path=$init_path/config/certbot
 # Set path for docker-compose file
 dc_path=$init_path/docker-compose.yml
+# Set certboot image version
+certbot_img="certbot/certbot:v1.4.0"
 # Set certbot's container name
 cont_name="certbot_container"
-# Set syslog tag
-syslog_tag="certbot"
+# Set logging tag
+logging_tag="certbot"
 
 # Check wether config path exists
 if ! [[ -d $cfg_path ]]; then
@@ -61,13 +66,13 @@ case "$user_email" in
 esac
 
 mount_points="-v $cfg_path:/etc/letsencrypt -v $cfg_path/www:/var/www/_letsencrypt"
-log_cfg="--log-driver syslog --log-opt tag=$syslog_tag"
+log_cfg="--log-driver syslog --log-opt tag=$logging_tag"
 
 firstcert() {
 
   echo "Checking wheter nginx is running in container..."
-  if [[ $(sudo docker ps | grep -c nginx) != "0" ]]; then
-    sudo docker-compose -f "$dc_path" stop
+  if [[ $(docker ps | grep -c nginx) != "0" ]]; then
+    docker-compose -f "$dc_path" stop
     echo "Nginx container is stopped"
   else
     echo "Nginx container is not running"
@@ -79,27 +84,27 @@ firstcert() {
   phy_certp="$cfg_path/live/$domains"
   mkdir -p "$phy_certp"
 
-  sudo docker run --rm --name "$cont_name" \
-    "$mount_points" "$log_cfg" \
-    --entrypoint openssl certbot/certbot req \
+  docker run --rm --name "$cont_name" \
+    $mount_points $log_cfg \
+    --entrypoint openssl "$certbot_img" req \
     -x509 -nodes -newkey rsa:1024 -days 1 -keyout "$virt_certp/privkey.pem" \
     -out "$virt_certp/fullchain.pem" \
     -subj "/CN=localhost"
   # Copy fake certificate for OCSP Stapling
-  sudo cp "$phy_certp/fullchain.pem" "$phy_certp/chain.pem"
+  cp "$phy_certp/fullchain.pem" "$phy_certp/chain.pem"
 
   echo "Fake certificates for nginx created"
 
   echo "Starting nginx with fake certificates..."
-  docker-compose -f "$dc_path up" -d
+  docker-compose -f "$dc_path" up -d
 
   echo "Nginx is running"
 
   echo "Deleting fake certificates..."
 
-  sudo docker run --rm --name "$cont_name" \
-    "$mount_points" "$log_cfg" \
-    --entrypoint rm certbot/certbot \
+  docker run --rm --name "$cont_name" \
+    $mount_points $log_cfg \
+    --entrypoint rm "$certbot_img" \
     -Rf /etc/letsencrypt/live/$domains \
     /etc/letsencrypt/archive/$domains \
     /etc/letsencrypt/renewal/$domains.conf
@@ -107,14 +112,14 @@ firstcert() {
   echo "Fake certs deleted"
 
   echo "Obtaining valid certificates for nginx..."
-  sudo docker run --rm --name "$cont_name" \
-    "$mount_points" "$log_cfg" \
-    --entrypoint certbot certbot/certbot certonly \
+  docker run --rm --name "$cont_name" \
+    $mount_points $log_cfg \
+    --entrypoint certbot "$certbot_img" certonly \
     --webroot -w /var/www/_letsencrypt \
-    "$staging_arg" \
-    "$email_arg" \
-    "$domain_args" \
-    --rsa-key-size "$rsa_key_size" \
+    $staging_arg \
+    $email_arg \
+    $domain_args \
+    --rsa-key-size $rsa_key_size \
     --agree-tos \
     --force-renewal
 
@@ -126,17 +131,17 @@ firstcert() {
 renewcert() {
 
   echo "Renenewing certificates for $domains..."
-  sudo docker run --rm --name "$cont_name" \
-    "$mount_points" "$log_cfg" \
-    --entrypoint certbot certbot/certbot renew \
+  docker run --rm --name "$cont_name" \
+    $mount_points $log_cfg \
+    --entrypoint certbot "$certbot_img" renew \
     --webroot -w /var/www/_letsencrypt
 
-  echo "Waiting 10 seconds to check syslog"
+  echo "Waiting 10 seconds to check output in system logs"
   sleep 10
 
-  if [[ $(sudo tail -n 50 /var/log/syslog | grep -q "The following certs have been renewed") ]]; then
+  if [[ $(journalctl --since="10 minutes ago" | grep -q "The following certs have been renewed") ]]; then
     echo "It seems, that certificate(s) were renewed; restarting services"
-    sudo docker-compose -f "$dc_path" restart
+    docker-compose -f "$dc_path" restart
   else
     echo "It seems, that certificates were not renewed; no restart required"
   fi
