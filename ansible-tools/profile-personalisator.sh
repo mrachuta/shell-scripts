@@ -31,19 +31,28 @@ get_package() {
 
 configure_bashrc() {
 
+  change_machine_color() {
+
+    echo "--> Chosing random color for machine-name background..."
+    # Last color in table is 256, but after 229 there are
+    # gray/black/white colors 
+    # https://misc.flogisoft.com/bash/tip_colors_and_formatting
+    color_code=$(( RANDOM % 229 ))
+    echo "Selected color: $color_code"
+    searched_val="D_MACHINE_COLOR=\"\\\e\[30;48;5;[[:digit:]]{1,3}m\""
+    new_val="D_MACHINE_COLOR=\"\\\e\[30;48;5;${color_code}m\""
+    sed -i -r "s~^$searched_val~$new_val~" "/tmp/$folder_name/.bashrc"
+
+  }
+
   echo "Configuring bashrc..."
   echo "Backup of .bashrc available in /home/$1/bashrc-$curr_datetime"
-
+  if ! [[ "$2" == "-nc" || "$2" == "--nocolormod" ]]; then
+    change_machine_color
+  else
+    echo "--> Chosing random color for machine-name background skipped!"
+  fi
   cp "/home/$1/.bashrc" "/home/$1/bashrc-$curr_datetime.bak"
-  echo "--> Chosing random color for machine-name background..."
-  # Last color in table is 256, but after 229 there are
-  # gray/black/white colors 
-  # https://misc.flogisoft.com/bash/tip_colors_and_formatting
-  color_code=$(( RANDOM % 229 ))
-  echo "Selected color: $color_code"
-  searched_val="D_MACHINE_COLOR=\"\\\e\[30;48;5;[[:digit:]]{1,3}m\""
-  new_val="D_MACHINE_COLOR=\"\\\e\[30;48;5;${color_code}m\""
-  sed -i -r "s~^$searched_val~$new_val~" "/tmp/$folder_name/.bashrc"
   chmod 644 "/home/$1/bashrc-$curr_datetime.bak"
   chown "$1":"$1" "/home/$1/bashrc-$curr_datetime.bak"
   cp "/tmp/$folder_name/.bashrc" "/home/$1/.bashrc"
@@ -85,10 +94,6 @@ configure_vim() {
   wget -qP "/home/$1/.vim/colors" \
     "https://github.com/tomasr/molokai/raw/master/colors/molokai.vim"
 
-  # Install molokayo theme
-  wget -qP "/home/$1/.vim/colors" \
-    "https://github.com/fmoralesc/molokayo/raw/master/colors/molokayo.vim"
-
   # Install plugins
   # Do not change!
   plugin_list_len=${#PLUGIN_LIST[@]}
@@ -121,8 +126,9 @@ do_cleanup() {
 usage() {
 
   echo -e "Script for personalisation bash & other tools\n"
-  echo "Usage: profile-personalisator.sh user"
+  echo "Usage: profile-personalisator.sh user [-nc|--nocolormod]"
   echo -e "Replace 'user' with your username\n"
+  echo -e "-nc or --nocolormod: do not change color of machine-name background in prompt"
 
 }
 
@@ -133,7 +139,7 @@ main() {
   if [[ -n "$1" ]]; then
     echo "Script started"
     get_package
-    configure_bashrc "$1"
+    configure_bashrc "$1" "$2"
     configure_bash_aliases "$1"
     configure_vim "$1"
     do_cleanup
@@ -143,4 +149,5 @@ main() {
   fi
 }
 
-main "$1"
+# Pass all arguments to main
+main "$@"
