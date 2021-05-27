@@ -38,8 +38,7 @@ ssh_params=(
     "ClientAliveCountMax=30"
     "IgnoreRhosts=yes"
     "GatewayPorts=yes"
-    "AllowUsers=ansible"
-    "AllowUsers=$1"
+    "AllowUsers=$1 ansible"
 )
 
 change_ssh_params() {
