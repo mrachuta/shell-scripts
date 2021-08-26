@@ -47,10 +47,10 @@ configure_bashrc() {
 
   echo "Configuring bashrc..."
   echo "Backup of .bashrc available in /home/$1/bashrc-$curr_datetime"
-  if ! [[ "$2" == "-nc" || "$2" == "--nocolormod" ]]; then
-    change_machine_color
-  else
+  if [[ "$2" == "-nc" ]] || [[ "$2" == "--nocolormod" ]]; then
     echo "--> Chosing random color for machine-name background skipped!"
+  else
+    change_machine_color
   fi
   cp "/home/$1/.bashrc" "/home/$1/bashrc-$curr_datetime.bak"
   chmod 644 "/home/$1/bashrc-$curr_datetime.bak"
