@@ -11,6 +11,7 @@ PLUGIN_LIST=(
   "https://github.com/itchyny/lightline.vim"
   "https://github.com/pangloss/vim-javascript"
   "https://github.com/chr4/nginx.vim"
+  "https://github.com/Yggdroot/indentLine.git"
 )
 
 arch_name=$(echo $PACKAGE_URL | rev | cut -d'/' -f 1 | rev)
